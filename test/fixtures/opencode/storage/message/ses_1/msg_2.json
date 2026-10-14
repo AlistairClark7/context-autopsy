@@ -1,0 +1,1 @@
+{"id": "msg_2", "sessionID": "ses_1", "role": "assistant", "modelID": "m", "time": {"created": 1759312801000}, "tokens": {"input": 5, "output": 40, "reasoning": 0, "cache": {"read": 0, "write": 0}}}

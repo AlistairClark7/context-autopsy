@@ -2,8 +2,9 @@
 import { statSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { findClaudeFiles, parseClaude, CLAUDE_ROOT } from '../src/sources/claude.js';
-import { findCodexFiles, parseCodex, CODEX_ROOT } from '../src/sources/codex.js';
+import { SOURCES, sourceFor, detectAgent } from '../src/sources/index.js';
+import { findClaudeFiles } from '../src/sources/claude.js';
+import { findCodexFiles } from '../src/sources/codex.js';
 import { analyzeContext, aggregate } from '../src/analyze.js';
 import { renderTerminal } from '../src/report/terminal.js';
 import { spawnSync } from 'node:child_process';
@@ -11,13 +12,15 @@ import { buildCard, tweetIntent } from '../src/report/share.js';
 
 const HELP = `context-autopsy — find out what's actually filling your coding agent's context window.
 
-Reads Claude Code and Codex transcripts on this machine. Nothing is uploaded.
+Reads coding-agent transcripts on this machine. Nothing is uploaded.
+Supported: ${SOURCES.map((x) => x.name).join(', ')}.
 
 Usage
   npx context-autopsy [options] [transcript.jsonl | directory ...]
 
 Options
-  --agent <claude|codex|all>   Which agent's transcripts to read (default: all)
+  --agent <ids>                Only these agents, comma-separated (default: all)
+                               ${SOURCES.map((x) => x.id).join(', ')}
   --since <7d|2026-09-01>      Only sessions active since this date or age
   --project <text>             Only sessions whose working directory contains <text>
   --last <n>                   Only the n most recent sessions
@@ -50,10 +53,6 @@ function parseSince(s) {
   return t;
 }
 
-function detectAgent(file) {
-  return /\/\.codex\/|rollout-/.test(file) ? 'codex' : 'claude';
-}
-
 function collectExplicit(paths) {
   const out = [];
   for (const p of paths) {
@@ -62,7 +61,7 @@ function collectExplicit(paths) {
     if (statSync(abs).isDirectory()) {
       const codex = findCodexFiles(abs);
       const claude = findClaudeFiles(abs).filter((f) => !codex.some((x) => x.file === f.file));
-      out.push(...codex.map((f) => ({ ...f, agent: detectAgent(f.file) })), ...claude.map((f) => ({ ...f, agent: detectAgent(f.file) })));
+      out.push(...[...codex, ...claude].map((f) => ({ ...f, agent: detectAgent(f.file) })));
     } else out.push({ agent: detectAgent(abs), file: abs, mtime: statSync(abs).mtimeMs });
   }
   return out;
@@ -94,17 +93,18 @@ async function main() {
   const o = args.values;
   if (o.help) return void process.stdout.write(HELP);
 
-  let files = args.positionals.length
-    ? collectExplicit(args.positionals)
-    : [...(o.agent === 'codex' ? [] : findClaudeFiles()), ...(o.agent === 'claude' ? [] : findCodexFiles())];
-  if (args.positionals.length && o.agent !== 'all') files = files.filter((f) => f.agent === o.agent);
+  const wanted = o.agent === 'all' ? null : new Set(o.agent.split(',').map((x) => x.trim().toLowerCase()));
+  for (const id of wanted || []) if (!sourceFor(id)) fail(`unknown agent "${id}". Supported: ${SOURCES.map((x) => x.id).join(', ')}`);
+  let files = args.positionals.length ? collectExplicit(args.positionals) : (await Promise.all(SOURCES.filter((x) => !wanted || wanted.has(x.id)).map(async (x) => { try { return await x.find(); } catch (e) { if (process.env.DEBUG) process.stderr.write(`${x.name}: ${e.message}\n`); return []; } }))).flat();
+  if (wanted) files = files.filter((f) => wanted.has(f.agent));
 
   const since = parseSince(o.since);
   if (since) files = files.filter((f) => f.mtime >= since);
   files.sort((a, b) => b.mtime - a.mtime);
 
   if (!files.length) {
-    fail(`no transcripts found. Looked in:\n  ${CLAUDE_ROOT}\n  ${CODEX_ROOT}\nPass a .jsonl file or directory to analyse something else.`);
+    const looked = SOURCES.filter((x) => !wanted || wanted.has(x.id)).map((x) => x.name);
+    fail(`no transcripts found for ${looked.join(', ')}.\nPass a transcript file or directory to analyse something else.`);
   }
 
   const progress = process.stderr.isTTY && !o.json;
@@ -115,7 +115,7 @@ async function main() {
     done++;
     let ctx;
     try {
-      ctx = f.agent === 'codex' ? await parseCodex(f.file) : await parseClaude(f.file);
+      ctx = await sourceFor(f.agent).parse(f.file);
     } catch (e) {
       if (process.env.DEBUG) process.stderr.write(`\nskipping ${f.file}: ${e.message}\n`);
       continue;
@@ -132,7 +132,8 @@ async function main() {
     const n = Number(o.last);
     const main = results.filter((r) => !r.isSubagent).slice(0, n);
     const keep = new Set(main.map((r) => r.file.replace(/\.jsonl$/, '')));
-    chosen = results.filter((r) => !r.isSubagent ? keep.has(r.file.replace(/\.jsonl$/, '')) : [...keep].some((k) => r.file.startsWith(k + '/')));
+    const mainFiles = new Set(main.map((r) => r.file));
+    chosen = results.filter((r) => (!r.isSubagent ? mainFiles.has(r.file) : [...keep].some((k) => r.file.startsWith(k + '/'))));
   }
   if (!chosen.length) fail('no sessions matched those filters.');
 

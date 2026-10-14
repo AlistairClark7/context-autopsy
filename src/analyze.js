@@ -32,6 +32,7 @@ export function analyzeContext(ctx) {
   const liveByCat = Object.fromEntries(Object.keys(CATEGORIES).map((k) => [k, 0]));
   let peak = null;
   let startup = null;
+  const snapshots = [];
 
   for (const ev of ctx.events) {
     if (ev.t === 'item') {
@@ -48,6 +49,9 @@ export function analyzeContext(ctx) {
       if (ev.contextTokens != null && (!peak || ev.contextTokens > peak.contextTokens)) {
         peak = { contextTokens: ev.contextTokens, index: ev.index, byCategory: { ...liveByCat } };
       }
+    } else if (ev.t === 'snapshot') {
+      // A measured context size between requests (Cursor records these instead of usage).
+      snapshots.push({ contextTokens: ev.contextTokens, liveEstimate: live.reduce((a, i) => a + i.tokens, 0) });
     } else if (ev.t === 'compact') {
       if (reqCount === lastCompactAt) continue;
       lastCompactAt = reqCount;
@@ -73,6 +77,10 @@ export function analyzeContext(ctx) {
     const itemProcessed = items.reduce((a, i) => a + i.tokens * i.resends, 0);
     const remaining = actualProcessed - baseline * requests.length;
     if (itemProcessed > 0 && remaining > 0) scale = Math.min(2, Math.max(0.5, remaining / itemProcessed));
+  } else if (snapshots.length) {
+    baseline = Math.max(0, snapshots[0].contextTokens - snapshots[0].liveEstimate);
+    const ratios = snapshots.filter((x) => x.liveEstimate > 1000).map((x) => (x.contextTokens - baseline) / x.liveEstimate).sort((a, b) => a - b);
+    if (ratios.length) scale = Math.min(2, Math.max(0.5, ratios[Math.floor(ratios.length / 2)]));
   }
 
   // Everything the model had to read before your first prompt mattered:
@@ -145,7 +153,7 @@ export function analyzeContext(ctx) {
     startedAt: ctx.startedAt,
     endedAt: ctx.endedAt,
     requests: requests.length,
-    measured: measured.length > 0,
+    measured: measured.length > 0 || snapshots.length > 0,
     baseline,
     startupOverhead,
     compactions,

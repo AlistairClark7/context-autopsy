@@ -58,4 +58,4 @@ export function pad(s, n, right = false) {
   return right ? fill + s : s + fill;
 }
 
-export const AGENT_NAME = { claude: 'Claude Code', codex: 'Codex' };
+export { AGENT_NAME } from '../sources/index.js';

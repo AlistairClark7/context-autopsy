@@ -1,7 +1,7 @@
 {
   "name": "context-autopsy",
-  "version": "0.1.1",
-  "description": "Find out what's actually filling your coding agent's context window. Breaks Claude Code and Codex sessions down into code, build logs, environment wrangling, errors, overhead and leaked secrets.",
+  "version": "0.2.0",
+  "description": "Find out what's actually filling your coding agent's context window. Breaks Claude Code, Codex, Cursor, OpenCode, Pi, Gemini CLI, Qwen Code, Cline, Roo, Kilo, Droid, Amp and Goose sessions down into code, build logs, environment wrangling, errors, overhead and leaked secrets.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AlistairClark7/context-autopsy.git"
@@ -31,6 +31,10 @@
     "context-window",
     "claude-code",
     "codex",
+    "cursor",
+    "opencode",
+    "gemini-cli",
+    "cline",
     "tokens",
     "ai-agents",
     "coding-agents",

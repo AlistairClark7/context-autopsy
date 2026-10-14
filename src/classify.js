@@ -111,13 +111,13 @@ function firstMatch(s, re) {
   return m ? m[1] : null;
 }
 
-const READ_TOOLS = new Set(['read', 'grep', 'glob', 'ls', 'notebookread', 'view', 'read_file', 'list_dir', 'search', 'codebase_search', 'file_search']);
-const WRITE_TOOLS = new Set(['edit', 'write', 'multiedit', 'notebookedit', 'apply_patch', 'str_replace_editor', 'create_file', 'edit_file']);
-const SHELL_TOOLS = new Set(['bash', 'exec', 'exec_command', 'shell', 'local_shell', 'run_terminal_cmd', 'powershell', 'container.exec']);
+const READ_TOOLS = new Set(['read', 'list', 'find', 'grep', 'glob', 'ls', 'notebookread', 'view', 'read_file', 'list_dir', 'search', 'codebase_search', 'file_search']);
+const WRITE_TOOLS = new Set(['edit', 'patch', 'create', 'multi_edit', 'write', 'multiedit', 'notebookedit', 'apply_patch', 'str_replace_editor', 'create_file', 'edit_file']);
+const SHELL_TOOLS = new Set(['bash', 'execute', 'run_commands', 'run_command', 'shell_command', 'exec', 'exec_command', 'shell', 'local_shell', 'run_terminal_cmd', 'powershell', 'container.exec']);
 const SHELL_IO_TOOLS = new Set(['bashoutput', 'write_stdin', 'monitor', 'killshell', 'wait']);
 const WEB_TOOLS = new Set(['webfetch', 'websearch', 'web_search', 'fetch']);
-const AGENT_TOOLS = new Set(['task', 'agent', 'sendmessage', 'send_message', 'spawn_agent', 'wait_agent', 'list_agents', 'followup_task', 'interrupt_agent', 'listagents', 'taskstop', 'workflow']);
-const BOOKKEEPING_TOOLS = new Set(['todowrite', 'update_plan', 'toolsearch', 'skill', 'exitplanmode', 'enterplanmode', 'askuserquestion', 'request_user_input', 'request_user_input_async', 'sleep', 'schedulewakeup']);
+const AGENT_TOOLS = new Set(['task', 'subagent', 'agent', 'sendmessage', 'send_message', 'spawn_agent', 'wait_agent', 'list_agents', 'followup_task', 'interrupt_agent', 'listagents', 'taskstop', 'workflow']);
+const BOOKKEEPING_TOOLS = new Set(['todowrite', 'todoread', 'question', 'update_plan', 'toolsearch', 'skill', 'exitplanmode', 'enterplanmode', 'askuserquestion', 'request_user_input', 'request_user_input_async', 'sleep', 'schedulewakeup']);
 
 /**
  * Classify a tool call. `input` is the raw input object or string.
@@ -127,7 +127,7 @@ export function classifyTool(name, input, namespace) {
   const n = String(name || '').toLowerCase();
   const ns = String(namespace || '').toLowerCase();
   const inp = input && typeof input === 'object' ? input : {};
-  const path = inp.file_path || inp.path || inp.notebook_path || inp.target_file || null;
+  const path = inp.file_path || inp.filePath || inp.path || inp.notebook_path || inp.target_file || inp.targetFile || null;
 
   if (SHELL_TOOLS.has(n)) {
     let command = typeof input === 'string' ? input : inp.command || inp.cmd || inp.code || '';
@@ -162,7 +162,7 @@ export function estimateTokens(text) {
   return Math.ceil(s.length / 3.8);
 }
 
-const ERROR_TEXT = /(exit(ed)? (with )?(code|status)[: ]+[1-9]\d*|Process exited with code [1-9]|command not found|No such file or directory|Traceback \(most recent call last\)|npm ERR!|ERR_PNPM|error\[E\d+\]|FAILED|panicked at|Segmentation fault|Permission denied|EADDRINUSE|ECONNREFUSED|Cannot find module)/;
+const ERROR_TEXT = /([Ee]xit(ed)? (with )?(code|status)[: ]+[1-9]\d*|Process exited with code [1-9]|command not found|No such file or directory|Traceback \(most recent call last\)|npm ERR!|ERR_PNPM|error\[E\d+\]|FAILED|panicked at|Segmentation fault|Permission denied|EADDRINUSE|ECONNREFUSED|Cannot find module)/;
 export function looksLikeError(text) {
   if (!text) return false;
   return ERROR_TEXT.test(String(text).slice(0, 4000)) || ERROR_TEXT.test(String(text).slice(-2000));

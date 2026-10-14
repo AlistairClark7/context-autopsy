@@ -1,6 +1,6 @@
 ---
 name: context-autopsy
-description: Analyse what is filling this machine's coding-agent context windows (Claude Code and Codex transcripts), grouped into code, build/test output, environment & infrastructure wrangling, errors, overhead, duplicates and leaked credentials. Use when the user asks where their tokens or context go, why sessions compact or get slow, what their agent wastes context on, or wants a context/token audit.
+description: Analyse what is filling this machine's coding-agent context windows (Claude Code, Codex, Cursor, OpenCode, Pi, Gemini CLI, Qwen Code, Cline, Roo Code, Kilo Code, Factory Droid, Amp, Goose), grouped into code, build/test output, environment & infrastructure wrangling, errors, overhead, duplicates and leaked credentials. Use when the user asks where their tokens or context go, why sessions compact or get slow, what their agent wastes context on, or wants a context/token audit.
 ---
 
 # Context autopsy
@@ -16,7 +16,7 @@ npx -y context-autopsy --json --since 30d > "${TMPDIR:-/tmp}/context-autopsy.jso
 Adjust the flags to the user's question:
 
 - A single project: add `--project <part of the path>`.
-- Only this agent: add `--agent claude` or `--agent codex`.
+- Only some agents: add `--agent claude` (or `codex`, `cursor`, `opencode`, `pi`, `gemini`, `qwen`, `cline`, `roo`, `kilo`, `droid`, `amp`, `goose`; comma-separate several).
 - Just the most recent work: add `--last 10` (or replace `--since`).
 - A specific transcript: pass its `.jsonl` path as an argument.
 

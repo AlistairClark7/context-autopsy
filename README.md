@@ -8,7 +8,7 @@ Your agent has a 200k–1M token window. You'd think most of it is spent on your
 npx context-autopsy
 ```
 
-It reads the Claude Code and Codex transcripts already on your machine and breaks every token down by what it was for: reading code, writing code, build and test logs, wrangling Docker, cloud CLIs and env vars, failed commands, fixed overhead, and more.
+It reads the coding-agent transcripts already on your machine (Claude Code, Codex, Cursor, OpenCode, Pi, Gemini CLI, Qwen Code, Cline, Roo Code, Kilo Code, Factory Droid, Amp and Goose) and breaks every token down by what it was for: reading code, writing code, build and test logs, wrangling Docker, cloud CLIs and env vars, failed commands, fixed overhead, and more.
 
 Everything runs locally. Nothing is uploaded. No dependencies.
 
@@ -98,7 +98,9 @@ Credentials are fingerprinted with a one-way hash so they can be counted. The va
 ```
 npx context-autopsy [options] [transcript.jsonl | directory ...]
 
-  --agent <claude|codex|all>   Which agent's transcripts to read (default: all)
+  --agent <ids>                Only these agents, comma-separated (default: all)
+                               claude, codex, cursor, opencode, pi, gemini, qwen,
+                               cline, roo, kilo, droid, amp, goose
   --since <7d|2026-09-01>      Only sessions active since this date or age
   --project <text>             Only sessions whose working directory contains <text>
   --last <n>                   Only the n most recent sessions
@@ -110,7 +112,33 @@ npx context-autopsy [options] [transcript.jsonl | directory ...]
   --json                       Machine-readable output
 ```
 
-Transcripts are read from `~/.claude/projects` and `~/.codex/sessions`. `CLAUDE_CONFIG_DIR` and `CODEX_HOME` are respected.
+## Supported agents
+
+Every agent found on your machine is read automatically.
+
+| Agent | Where it reads from | Token usage |
+| --- | --- | --- |
+| Claude Code | `~/.claude/projects` (`CLAUDE_CONFIG_DIR`) | per request |
+| Codex | `~/.codex/sessions` (`CODEX_HOME`) | per request |
+| Cursor | `state.vscdb` in Cursor's global storage | context snapshots only¹ |
+| OpenCode | `~/.local/share/opencode` (`XDG_DATA_HOME`, `OPENCODE_DB`): SQLite and older JSON storage | per request |
+| Pi | `~/.pi/agent/sessions` (`PI_CODING_AGENT_DIR`, `PI_CODING_AGENT_SESSION_DIR`) | per request |
+| Gemini CLI | `~/.gemini/tmp/*/chats` | per request |
+| Qwen Code | `~/.qwen/projects` (`QWEN_HOME`) | per request |
+| Cline | `tasks/` in the extension's storage³, and `~/.cline/data` (SDK and CLI sessions) | per request |
+| Roo Code | `tasks/` in the extension's storage³ | per request |
+| Kilo Code | `~/.local/share/kilo` (7.x), and `tasks/` in the extension's storage³ (≤5.x) | per request |
+| Factory Droid | `~/.factory/sessions` | per request² |
+| Amp | `~/.local/share/amp/threads` (`AMP_DATA_DIR`) | per request² |
+| Goose | `~/.local/share/goose/sessions/sessions.db` (`GOOSE_PATH_ROOT`) | per request² |
+
+¹ Cursor doesn't store per-request usage. Sizes are calibrated from the context-window snapshot Cursor saves with each message you send.
+² Droid and Amp are closed source. Their formats come from open-source parsers, not vendor code.
+³ "The extension's storage" means VS Code's global storage for the extension, in VS Code, Insiders, VSCodium, Cursor, Windsurf, Trae or Kiro, including remote (`~/.vscode-server`) installs.
+
+SQLite-backed agents (Cursor, OpenCode, Kilo Code 7.x, Goose) need Node 22.5 or later. On older versions of Node they're skipped. Not supported yet: Cursor's CLI (`cursor-agent`), which uses undocumented protobuf storage, and GitHub Copilot Chat and Aider, which don't keep tool output in a usable form.
+
+Is your agent missing? Open an issue with where it stores sessions.
 
 ## Share yours
 
@@ -135,7 +163,7 @@ Or copy [`skills/context-autopsy`](skills/context-autopsy) into `~/.claude/skill
 
 - Token counts per item are estimated from text length (about 3.8 characters per token), then scaled per session to match the API's reported totals. Category shares are good. Individual items are approximate.
 - Category rules are heuristics over tool names, commands and file paths. `--detail` shows exactly what went where. PRs that improve the rules are welcome.
-- Transcript formats change between agent versions. If something looks off, run with `DEBUG=1` and open an issue.
+- Transcript formats change between agent versions. Claude Code, Codex and Roo Code have been tested against real sessions. The other agents' parsers were built from their source code and are tested with synthetic sessions. If something looks off, run with `DEBUG=1` and open an issue.
 
 ## Licence
 
