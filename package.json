@@ -1,0 +1,31 @@
+{
+  "name": "context-autopsy",
+  "version": "0.1.0",
+  "description": "Find out what's actually filling your coding agent's context window. Breaks Claude Code and Codex sessions down into code, build logs, environment wrangling, errors, overhead and leaked secrets.",
+  "type": "module",
+  "bin": {
+    "context-autopsy": "bin/context-autopsy.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18.3"
+  },
+  "keywords": [
+    "llm",
+    "context-window",
+    "claude-code",
+    "codex",
+    "tokens",
+    "ai-agents",
+    "coding-agents",
+    "observability"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "context-autopsy",
+  "owner": { "name": "Alistair Clark" },
+  "plugins": [
+    {
+      "name": "context-autopsy",
+      "source": "./",
+      "description": "Find out what's actually filling your coding agent's context window."
+    }
+  ]
+}
