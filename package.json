@@ -2,6 +2,15 @@
   "name": "context-autopsy",
   "version": "0.1.0",
   "description": "Find out what's actually filling your coding agent's context window. Breaks Claude Code and Codex sessions down into code, build logs, environment wrangling, errors, overhead and leaked secrets.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlistairClark7/context-autopsy.git"
+  },
+  "homepage": "https://github.com/AlistairClark7/context-autopsy#readme",
+  "bugs": {
+    "url": "https://github.com/AlistairClark7/context-autopsy/issues"
+  },
+  "author": "Alistair Clark",
   "type": "module",
   "bin": {
     "context-autopsy": "bin/context-autopsy.js"

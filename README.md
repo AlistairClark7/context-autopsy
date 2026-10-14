@@ -5,7 +5,7 @@
 Your agent has a 200k–1M token window. You'd think most of it is spent on your code. Run this and see what it's really spent on.
 
 ```bash
-npx github:AlistairClark7/context-autopsy
+npx context-autopsy
 ```
 
 It reads the Claude Code and Codex transcripts already on your machine and breaks every token down by what it was for: reading code, writing code, build and test logs, wrangling Docker, cloud CLIs and env vars, failed commands, fixed overhead, and more.
@@ -96,7 +96,7 @@ Credentials are fingerprinted with a one-way hash so they can be counted. The va
 ## Options
 
 ```
-npx github:AlistairClark7/context-autopsy [options] [transcript.jsonl | directory ...]
+npx context-autopsy [options] [transcript.jsonl | directory ...]
 
   --agent <claude|codex|all>   Which agent's transcripts to read (default: all)
   --since <7d|2026-09-01>      Only sessions active since this date or age

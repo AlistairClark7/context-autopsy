@@ -10,7 +10,7 @@ Run the analyser, read its JSON, and explain the results in plain language.
 ## 1. Run it
 
 ```bash
-npx -y github:AlistairClark7/context-autopsy --json --since 30d > "${TMPDIR:-/tmp}/context-autopsy.json"
+npx -y context-autopsy --json --since 30d > "${TMPDIR:-/tmp}/context-autopsy.json"
 ```
 
 Adjust the flags to the user's question:
@@ -20,7 +20,7 @@ Adjust the flags to the user's question:
 - Just the most recent work: add `--last 10` (or replace `--since`).
 - A specific transcript: pass its `.jsonl` path as an argument.
 
-If the user wants to see the visual report themselves, tell them to run `npx -y github:AlistairClark7/context-autopsy --detail` in their terminal. The output uses colour and is wide.
+If the user wants to see the visual report themselves, tell them to run `npx -y context-autopsy --detail` in their terminal. The output uses colour and is wide.
 
 ## 2. Read the JSON
 
