@@ -1,8 +1,7 @@
 import { CATEGORIES } from '../classify.js';
-import { c, CATEGORY_COLOR, tok, int, pct, bar, date, pad } from './format.js';
+import { c, CATEGORY_COLOR, tok, int, pct, bar, date, pad, AGENT_NAME } from './format.js';
 import { buildCard } from './share.js';
 
-const AGENT_NAME = { claude: 'Claude Code', codex: 'Codex' };
 
 export function headlines(r) {
   const out = [];

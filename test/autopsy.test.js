@@ -91,6 +91,7 @@ test('aggregate + share card contain no paths or secrets', async () => {
   assert.ok(!card.includes('/home/dev'));
   assert.ok(!card.includes(FAKE_STRIPE));
   assert.match(card, /It saw 2 secret keys & passwords/);
+  assert.match(card, /^🩻 I autopsied my (Claude Code \+ Codex|Codex \+ Claude Code) context windows\./);
 });
 
 test('tweet length counts emoji as two characters', () => {
@@ -103,6 +104,7 @@ test('card drops its weakest stats to stay within the limit', async () => {
   const { text, length } = buildCard(report, { limit: 200 });
   assert.ok(length <= 200, `${length}`);
   assert.match(text, /npx context-autopsy$/);
+  assert.match(text, /^🩻 I autopsied my Claude Code context window\./);
 });
 
 test('CLI runs on explicit files and emits JSON', () => {

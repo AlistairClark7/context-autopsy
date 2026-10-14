@@ -57,3 +57,5 @@ export function pad(s, n, right = false) {
   const fill = ' '.repeat(Math.max(0, n - len));
   return right ? fill + s : s + fill;
 }
+
+export const AGENT_NAME = { claude: 'Claude Code', codex: 'Codex' };

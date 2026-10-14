@@ -1,4 +1,4 @@
-import { tok, int, pct } from './format.js';
+import { tok, int, pct, AGENT_NAME } from './format.js';
 
 export const RUN_COMMAND = 'npx context-autopsy';
 export const TWEET_LIMIT = 280;
@@ -52,9 +52,20 @@ function scale(r) {
   return books >= 2 ? [line, `(≈${int(books)}× War and Peace)`] : [line];
 }
 
+/** "my Claude Code context window", "my Claude Code + Codex context windows", … */
+function subject(r) {
+  const names = Object.entries(r.agents)
+    .sort((a, b) => b[1] - a[1])
+    .map(([a]) => AGENT_NAME[a] || a);
+  if (names.length === 0) return "my AI coding agent's context window";
+  if (names.length === 1) return `my ${names[0]} context window`;
+  if (names.length <= 3) return `my ${names.join(' + ')} context windows`;
+  return `my ${names.length} AI coding agents' context windows`;
+}
+
 /** Builds the post. Drops the weakest stats until it fits in one tweet. */
 export function buildCard(r, { limit = TWEET_LIMIT } = {}) {
-  const top = ['🩻 I autopsied my AI coding agent\'s context window.', '', headline(r), ''];
+  const top = [`🩻 I autopsied ${subject(r)}.`, '', headline(r), ''];
   const [scaleLine, books] = scale(r);
   let lines = stats(r).slice(0, 4);
   const compose = (ls, withBooks) => [...top, ...ls, '', withBooks && books ? `${scaleLine} ${books}` : scaleLine, RUN_COMMAND].join('\n');

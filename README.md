@@ -19,7 +19,7 @@ Everything runs locally. Nothing is uploaded. No dependencies.
 First, a card sized for one post (example output):
 
 ```
-🩻 I autopsied my AI coding agent's context window.
+🩻 I autopsied my Claude Code context window.
 
 Only 27% of it was my actual code.
 
