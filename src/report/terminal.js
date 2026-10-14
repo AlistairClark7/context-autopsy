@@ -64,15 +64,15 @@ export function renderTerminal(r, opts = {}) {
   const agents = Object.entries(r.agents)
     .map(([a, n]) => `${n} ${AGENT_NAME[a] || a}`)
     .join(', ');
-  // The post-ready card comes first: it's the bit people screenshot.
+  // The post-ready card comes first: it's the bit people copy and post, so
+  // its lines carry no indent or border characters (colour codes don't copy).
   const card = buildCard(r);
   p();
-  for (const [i, line] of card.text.split('\n').entries()) {
-    const styled = i === 2 ? c.bold(c.cyan(line)) : i === 0 ? c.bold(line) : line;
-    p(`  ${c.cyan('┃')}  ${styled}`);
-  }
+  p(c.dim('── copy & post ' + '─'.repeat(Math.max(0, W - 15))));
   p();
-  p(c.dim(`  ${card.length}/280 characters · post it: npx context-autopsy --share --copy`));
+  for (const [i, line] of card.text.split('\n').entries()) p(i === 2 ? c.bold(c.cyan(line)) : i === 0 ? c.bold(line) : line);
+  p();
+  p(c.dim(`── ${card.length}/280 characters · or run: npx context-autopsy --share --copy ` + '─'.repeat(Math.max(0, W - 70))));
   p();
   p(c.dim('─'.repeat(W)));
   p(`${c.bold('context-autopsy')}  ${c.dim('·')}  ${int(r.sessions)} contexts (${agents})  ${c.dim('·')}  ${date(r.range.first)} – ${date(r.range.last)}`);
