@@ -1,7 +1,7 @@
 {
   "name": "context-autopsy",
   "description": "Find out what's actually filling your coding agent's context window.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "keywords": ["context", "tokens", "observability"]
 }
