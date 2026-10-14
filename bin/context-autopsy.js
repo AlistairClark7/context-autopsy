@@ -6,7 +6,8 @@ import { findClaudeFiles, parseClaude, CLAUDE_ROOT } from '../src/sources/claude
 import { findCodexFiles, parseCodex, CODEX_ROOT } from '../src/sources/codex.js';
 import { analyzeContext, aggregate } from '../src/analyze.js';
 import { renderTerminal } from '../src/report/terminal.js';
-import { renderShare } from '../src/report/share.js';
+import { spawnSync } from 'node:child_process';
+import { buildCard, tweetIntent } from '../src/report/share.js';
 
 const HELP = `context-autopsy — find out what's actually filling your coding agent's context window.
 
@@ -23,7 +24,8 @@ Options
   --no-subagents               Skip subagent / child-thread transcripts
   --detail                     Show sub-categories
   --top <n>                    Rows in the "most expensive" table (default 8)
-  --share                      Print an anonymised summary to paste into a post
+  --share                      Print just the post-ready card (no paths or names) and a link to post it
+  --copy                       Copy the card to the clipboard
   --json                       Machine-readable output
   --no-color                   Disable colours
   -h, --help                   Show this help
@@ -80,6 +82,7 @@ async function main() {
         detail: { type: 'boolean' },
         top: { type: 'string' },
         share: { type: 'boolean' },
+        copy: { type: 'boolean' },
         json: { type: 'boolean' },
         'no-color': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
@@ -135,8 +138,20 @@ async function main() {
 
   const report = aggregate(chosen);
   if (o.json) process.stdout.write(JSON.stringify(report, null, 2) + '\n');
-  else if (o.share) process.stdout.write(renderShare(report) + '\n');
-  else process.stdout.write(renderTerminal(report, { detail: o.detail, top: o.top ? Number(o.top) : undefined }) + '\n');
+  else if (o.share) {
+    const { text } = buildCard(report);
+    process.stdout.write(text + '\n');
+    process.stderr.write(`\nPost it: ${tweetIntent(text)}\n`);
+  } else process.stdout.write(renderTerminal(report, { detail: o.detail, top: o.top ? Number(o.top) : undefined }) + '\n');
+  if (o.copy) process.stderr.write(copyToClipboard(buildCard(report).text) ? 'Copied the card to your clipboard.\n' : 'Could not find a clipboard tool; use --share and copy the text above.\n');
+}
+
+function copyToClipboard(text) {
+  const tools = process.platform === 'darwin' ? [['pbcopy']] : process.platform === 'win32' ? [['clip']] : [['wl-copy'], ['xclip', '-selection', 'clipboard'], ['xsel', '--clipboard', '--input']];
+  return tools.some(([cmd, ...args]) => {
+    const r = spawnSync(cmd, args, { input: text });
+    return !r.error && r.status === 0;
+  });
 }
 
 main().catch((e) => fail(e.stack || e.message));

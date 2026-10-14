@@ -1,5 +1,6 @@
 import { CATEGORIES } from '../classify.js';
 import { c, CATEGORY_COLOR, tok, int, pct, bar, date, pad } from './format.js';
+import { buildCard } from './share.js';
 
 const AGENT_NAME = { claude: 'Claude Code', codex: 'Codex' };
 
@@ -64,7 +65,17 @@ export function renderTerminal(r, opts = {}) {
   const agents = Object.entries(r.agents)
     .map(([a, n]) => `${n} ${AGENT_NAME[a] || a}`)
     .join(', ');
+  // The post-ready card comes first: it's the bit people screenshot.
+  const card = buildCard(r);
   p();
+  for (const [i, line] of card.text.split('\n').entries()) {
+    const styled = i === 2 ? c.bold(c.cyan(line)) : i === 0 ? c.bold(line) : line;
+    p(`  ${c.cyan('┃')}  ${styled}`);
+  }
+  p();
+  p(c.dim(`  ${card.length}/280 characters · post it: npx context-autopsy --share --copy`));
+  p();
+  p(c.dim('─'.repeat(W)));
   p(`${c.bold('context-autopsy')}  ${c.dim('·')}  ${int(r.sessions)} contexts (${agents})  ${c.dim('·')}  ${date(r.range.first)} – ${date(r.range.last)}`);
   if (r.measured) {
     p(c.dim(`${int(r.requests)} model calls · ${tok(r.processed)} tokens processed · ${tok(r.usage.output)} output tokens · ${pct(r.usage.cacheRead / Math.max(1, r.usage.input + r.usage.cacheRead + r.usage.cacheWrite))} served from cache`));
@@ -129,7 +140,7 @@ export function renderTerminal(r, opts = {}) {
 
   p();
   p(c.dim('Everything above was computed locally. Nothing left your machine.'));
-  p(c.dim('Share an anonymised summary: npx context-autopsy --share'));
+  p(c.dim('Post the card at the top: npx context-autopsy --share --copy'));
   p();
   return lines.join('\n');
 }

@@ -10,7 +10,7 @@ import { shortCommand } from '../src/sources/common.js';
 import { parseClaude } from '../src/sources/claude.js';
 import { parseCodex } from '../src/sources/codex.js';
 import { analyzeContext, aggregate } from '../src/analyze.js';
-import { renderShare } from '../src/report/share.js';
+import { buildCard, tweetLength } from '../src/report/share.js';
 
 const fixtures = new URL('./fixtures/', import.meta.url).pathname;
 // Assembled at runtime so no credential-shaped string is committed.
@@ -86,10 +86,23 @@ test('aggregate + share card contain no paths or secrets', async () => {
   const report = aggregate(results);
   assert.equal(report.sessions, 2);
   assert.equal(report.secrets.distinct, 2);
-  const card = renderShare(report);
+  const { text: card, length } = buildCard(report);
+  assert.ok(length <= 280, `fits in a tweet (${length})`);
   assert.ok(!card.includes('/home/dev'));
   assert.ok(!card.includes(FAKE_STRIPE));
-  assert.match(card, /credentials passed through the model/);
+  assert.match(card, /It saw 2 secret keys & passwords/);
+});
+
+test('tweet length counts emoji as two characters', () => {
+  assert.equal(tweetLength('abc'), 3);
+  assert.equal(tweetLength('🩻 hi'), 5);
+});
+
+test('card drops its weakest stats to stay within the limit', async () => {
+  const report = aggregate([analyzeContext(await parseClaude(claudeFixture()))]);
+  const { text, length } = buildCard(report, { limit: 200 });
+  assert.ok(length <= 200, `${length}`);
+  assert.match(text, /npx context-autopsy$/);
 });
 
 test('CLI runs on explicit files and emits JSON', () => {

@@ -16,26 +16,44 @@ Everything runs locally. Nothing is uploaded. No dependencies.
 
 ## What you get
 
+First, a card sized for one post (example output):
+
+```
+🩻 I autopsied my AI coding agent's context window.
+
+Only 27% of it was my actual code.
+
+🔑 It saw 23 secret keys & passwords
+💥 1,204 failed commands
+🔧 21% was build logs & env wrangling
+🧠 Hit its context limit 87 times
+
+1.9B tokens in 60 days
+npx context-autopsy
+```
+
+The headline and stats are picked from whatever is most striking in *your* data. The card always fits in 280 characters and contains no paths, project names or commands. `--share --copy` puts it on your clipboard and prints a link to post it.
+
+Below the card is the full breakdown:
+
 ```
 WHERE YOUR CONTEXT WENT
                                   processed*   share  in context
-Fixed overhead                        412.0M   31.2%        4.1M  ██████████████████████████████
-Reading code                          301.7M   22.9%        6.8M  ██████████████████████▏·······
-Build, test & run output              188.4M   14.3%        3.2M  ██████████████▋···············
-Environment & infrastructure          121.9M    9.2%        2.0M  ███████████▊··················
-Reasoning                              96.3M    7.3%        2.9M  █████████▎····················
+Reading code                          512.3M   27.0%        9.1M  ██████████████████████████████
+Fixed overhead                        398.4M   21.0%        5.2M  ███████████████████▍··········
+Build, test & run output              246.6M   13.0%        4.4M  █████████████▏················
+Reasoning                             227.6M   12.0%        4.6M  ████████▍·····················
+Environment & infrastructure          151.8M    8.0%        2.7M  ████████▏·····················
+Git & version control                 132.8M    7.0%        2.4M  ███████▍······················
 ...
 
 THE HEADLINES
-▸ 24% of everything your agents processed was build output and environment wrangling.
-  For every token of your actual code, they processed 1.1 tokens of plumbing.
-▸ 812 failed commands and tool calls (9% of all tool calls), 41.0M tokens of error output processed.
-▸ 14 credentials passed through the model's context (6 Database URL with password, 3 AWS access key, …).
-▸ 31k tokens of system prompt, tool definitions and injected instructions before you type a word.
+▸ 21% of everything your agents processed was build output and environment wrangling.
+▸ 1,204 failed commands and tool calls (7% of all tool calls), 64.0M tokens of error output processed.
+▸ 23 credentials passed through the model's context (9 Database URL with password, 6 AWS access key, …).
 ▸ Most expensive single output: a 14k-token `pnpm install` result, re-sent 212 times = 3.0M tokens.
-▸ 37 sessions filled the window and compacted. Each time, the agent loses its working detail.
+▸ 41 sessions filled the window and compacted (87 times).
 ```
-<sub>Illustrative output. Yours will differ, which is the point.</sub>
 
 Also shown:
 
@@ -87,7 +105,8 @@ npx github:AlistairClark7/context-autopsy [options] [transcript.jsonl | director
   --no-subagents               Skip subagent / child-thread transcripts
   --detail                     Show sub-categories (which tools, which commands)
   --top <n>                    Rows in the "most expensive" table
-  --share                      Anonymised summary to paste into a post
+  --share                      Just the post-ready card, plus a link to post it
+  --copy                       Copy the card to the clipboard
   --json                       Machine-readable output
 ```
 
@@ -96,24 +115,10 @@ Transcripts are read from `~/.claude/projects` and `~/.codex/sessions`. `CLAUDE_
 ## Share yours
 
 ```bash
-npx github:AlistairClark7/context-autopsy --share
+npx context-autopsy --share --copy
 ```
 
-```
-My coding agents' context, autopsied 🩻
-212 sessions over 30 days · 1.3B tokens processed
-
-Fixed overhead                ▓▓▓▓▓▓░░░░░░░░░░░░░░ 31%
-Reading code                  ▓▓▓▓▓░░░░░░░░░░░░░░░ 23%
-Build, test & run output      ▓▓▓░░░░░░░░░░░░░░░░░ 14%
-Environment & infrastructure  ▓▓░░░░░░░░░░░░░░░░░░ 9%
-
-🔧 24% was build logs + environment wrangling
-💥 812 failed commands (9% of tool calls)
-🔑 14 credentials passed through the model
-```
-
-The share card contains no paths, project names, session titles or command arguments.
+This prints just the card, copies it to your clipboard, and gives you a link that opens a pre-filled post.
 
 ## Use it from inside Claude Code
 

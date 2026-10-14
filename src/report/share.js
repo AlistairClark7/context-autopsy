@@ -1,35 +1,79 @@
-import { CATEGORIES } from '../classify.js';
 import { tok, int, pct } from './format.js';
 
-const BLOCKS = 20;
+export const RUN_COMMAND = 'npx context-autopsy';
+export const TWEET_LIMIT = 280;
 
-/** A plain-text, anonymised card meant to be pasted into a post. No paths, titles or session ids. */
-export function renderShare(r) {
-  const lines = [];
-  const p = (s = '') => lines.push(s);
+// ~587k words ≈ 780k tokens.
+const WAR_AND_PEACE_TOKENS = 780_000;
+
+/** X/Twitter weighted length: most characters count 1, emoji and CJK count 2. */
+export function tweetLength(text) {
+  let n = 0;
+  for (const ch of text.replace(/[️‍]/g, '')) n += ch.codePointAt(0) <= 0x10ff ? 1 : 2;
+  return n;
+}
+
+const plural = (n, one, many = one + 's') => `${int(n)} ${n === 1 ? one : many}`;
+
+/**
+ * The punchline. Picks the most surprising true statement about this data.
+ * Written in the first person because it's meant to be posted as-is.
+ */
+function headline(r) {
+  const code = r.shares.code;
+  const plumbing = r.shares.plumbing;
+  if (code > 0 && code < 0.5) return `Only ${pct(code)} of it was my actual code.`;
+  if (plumbing >= 0.2) return `${pct(plumbing)} of it was build logs and fighting my dev environment.`;
+  if (r.secrets.distinct > 0) return `It saw ${plural(r.secrets.distinct, 'of my secrets', 'of my secrets')}.`;
+  if (r.shares.overhead >= 0.25) return `${pct(r.shares.overhead)} of it was overhead before I'd typed a word.`;
+  return `Here's where ${tok(r.processed)} tokens went.`;
+}
+
+/** Supporting stats, most striking first. Each has a score so we keep the best that fit. */
+function stats(r) {
+  const out = [];
+  const add = (score, line) => score > 0 && out.push({ score, line });
+
+  if (r.shares.overhead >= 0.1) add(r.shares.overhead * 3, `📦 ${pct(r.shares.overhead)} was boilerplate, re-read every turn`);
+  if (r.shares.plumbing >= 0.05) add(r.shares.plumbing * 12, `🔧 ${pct(r.shares.plumbing)} was build logs & env wrangling`);
+  if (r.secrets.distinct > 0) add(2 + Math.min(r.secrets.distinct, 50) / 25, `🔑 It saw ${plural(r.secrets.distinct, 'secret key/password', 'secret keys & passwords')}`);
+  const o = r.offenders[0];
+  if (o && o.resends >= 20) add(Math.min(2, o.resends / 100), `🔁 Re-read one ${tok(o.tokens)}-token output ${int(o.resends)}×`);
+  if (r.errors.count >= 10) add(Math.min(1.8, r.errors.count / 500), `💥 ${int(r.errors.count)} failed commands`);
+  if (r.compactedSessions > 0) add(Math.min(1.5, r.compactedSessions / 50), `🧠 Hit its context limit ${plural(r.compactions, 'time')}`);
+  if (r.duplicates.tokens >= 100_000) add(0.8, `♻️ ${tok(r.duplicates.tokens)} tokens of copy-pasted duplicates`);
+  return out.sort((a, b) => b.score - a.score).map((s) => s.line);
+}
+
+function scale(r) {
   const days = r.range.first && r.range.last ? Math.max(1, Math.round((new Date(r.range.last) - new Date(r.range.first)) / 864e5)) : null;
+  const books = Math.floor(r.processed / WAR_AND_PEACE_TOKENS);
+  const line = `${tok(r.processed)} tokens` + (days ? ` in ${plural(days, 'day')}` : '');
+  return books >= 2 ? [line, `(≈${int(books)}× War and Peace)`] : [line];
+}
 
-  p(`My coding agents' context, autopsied 🩻`);
-  p(`${int(r.sessions)} sessions${days ? ` over ${days} days` : ''} · ${tok(r.processed)} tokens processed`);
-  p();
-  const cats = Object.entries(r.totals)
-    .filter(([, t]) => t.processed / r.processed >= 0.005)
-    .sort((a, b) => b[1].processed - a[1].processed)
-    .slice(0, 7);
-  const width = Math.max(...cats.map(([k]) => CATEGORIES[k].label.length));
-  for (const [k, t] of cats) {
-    const share = t.processed / r.processed;
-    const n = Math.max(1, Math.round(share * BLOCKS));
-    p(`${CATEGORIES[k].label.padEnd(width)}  ${'▓'.repeat(n)}${'░'.repeat(BLOCKS - n)} ${pct(share)}`);
+/** Builds the post. Drops the weakest stats until it fits in one tweet. */
+export function buildCard(r, { limit = TWEET_LIMIT } = {}) {
+  const top = ['🩻 I autopsied my AI coding agent\'s context window.', '', headline(r), ''];
+  const [scaleLine, books] = scale(r);
+  let lines = stats(r).slice(0, 4);
+  const compose = (ls, withBooks) => [...top, ...ls, '', withBooks && books ? `${scaleLine} ${books}` : scaleLine, RUN_COMMAND].join('\n');
+
+  let text = compose(lines, true);
+  if (tweetLength(text) > limit) text = compose(lines, false);
+  while (tweetLength(text) > limit && lines.length > 1) {
+    lines = lines.slice(0, -1);
+    text = compose(lines, true);
+    if (tweetLength(text) > limit) text = compose(lines, false);
   }
-  p();
-  p(`🔧 ${pct(r.shares.plumbing)} was build logs + environment wrangling`);
-  if (r.shares.plumbingPerCodeToken >= 0.1) p(`📉 ${r.shares.plumbingPerCodeToken.toFixed(1)} tokens of plumbing per token of actual code`);
-  if (r.errors.count) p(`💥 ${int(r.errors.count)} failed commands (${pct(r.errors.count / Math.max(1, r.errors.toolResults))} of tool calls)`);
-  if (r.secrets.distinct) p(`🔑 ${int(r.secrets.distinct)} credentials passed through the model`);
-  if (r.baselineMedian) p(`📦 ${tok(r.baselineMedian)} tokens of overhead before the first prompt`);
-  if (r.compactedSessions) p(`🧠 ${int(r.compactedSessions)} sessions ran out of room and compacted`);
-  p();
-  p(`npx context-autopsy`);
-  return lines.join('\n');
+  return { text, length: tweetLength(text) };
+}
+
+export function tweetIntent(text) {
+  return `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+}
+
+export function renderShare(r) {
+  const { text } = buildCard(r);
+  return text;
 }
